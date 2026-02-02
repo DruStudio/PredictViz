@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>PredictViz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+:root{
+  --bg:#05070d;
+  --panel:#0b1020;
+  --border:#1c2546;
+  --text:#eef1ff;
+  --muted:#9aa4c7;
+
+  --red:#7f1d1d;
+  --amber:#d97706;
+  --green:#15803d;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Inter,system-ui,sans-serif;
+  background:radial-gradient(900px 600px at 50% -200px,#0b1333,var(--bg));
+  color:var(--text);
+}
+
+canvas#particles{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+}
+
+/* Header */
+.header{
+  text-align:center;
+  padding:32px 0 14px;
+  position:relative;
+}
+.brand{
+  font-size:56px;
+  font-weight:800;
+  background:linear-gradient(90deg,#93c5fd,#60a5fa,#34d399);
+  -webkit-background-clip:text;
+  color:transparent;
+  animation:hue 12s linear infinite;
+}
+@keyframes hue{to{filter:hue-rotate(360deg)}}
+.bio{font-size:14px;color:var(--muted);margin-top:6px}
+.version{
+  position:absolute;
+  top:12px;
+  right:16px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* Layout */
+.main{
+  display:grid;
+  grid-template-columns:420px 540px 420px;
+  gap:24px;
+  justify-content:center;
+  padding:24px;
+}
+.label{
+  text-align:center;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:8px;
+}
+
+/* Modules */
+.module,.capture{
+  height:560px;
+  background:linear-gradient(180deg,var(--panel),#070b18);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+}
+
+/* CREATE */
+.field{margin-bottom:16px}
+.field label{
+  font-size:12px;
+  color:var(--muted);
+  display:block;
+  margin-bottom:6px;
+  text-align:center;
+}
+.field input,.field select{
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#060a18;
+  color:var(--text);
+}
+.inline{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.char-cap{
+  font-size:10px;
+  color:var(--muted);
+  text-align:right;
+  margin-top:2px;
+}
+
+/* CAPTURE */
+.capture-center{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:10px;
+}
+.cap-title{
+  font-size:34px;
+  font-weight:800;
+  max-width:92%;
+  line-height:1.15;
+  margin-top:10px;
+}
+
+.pred-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 22px;
+  border-radius:999px;
+  font-size:14px;
+  font-weight:800;
+}
+.pred-pill.yes{
+  color:var(--green);
+  border:1px solid var(--green);
+  background:rgba(21,128,61,.14);
+  box-shadow:0 0 10px rgba(21,128,61,.25);
+}
+.pred-pill.no{
+  color:var(--red);
+  border:1px solid var(--red);
+  background:rgba(127,29,29,.14);
+  box-shadow:0 0 10px rgba(127,29,29,.25);
+}
+
+/* Current Odds (text above dial) */
+.odds-readout{
+  margin-top:6px;
+  margin-bottom:2px;
+}
+.odds-readout .label{
+  font-size:14px;
+  letter-spacing:.1em;
+}
+.odds-readout .value{
+  font-size:36px;
+  font-weight:800;
+  margin-top:2px;
+}
+
+/* Dial */
+.dial-wrap{
+  width:440px;
+  height:260px;
+  position:relative;
+  margin-top:4px;
+}
+.arc{
+  fill:none;
+  stroke:url(#dialGrad);
+  stroke-width:22;
+  stroke-linecap:butt;
+  filter:drop-shadow(0 0 6px rgba(217,119,6,.25));
+}
+.needle{
+  stroke:#ffffff;
+  stroke-width:4;
+}
+.needle-base{fill:#ffffff}
+
+.axis{
+  position:absolute;
+  bottom:72px;
+  font-size:12px;
+  color:var(--muted);
+}
+.axis.no{left:34px}
+.axis.yes{right:34px}
+
+/* Footer */
+.footer{
+  height:60px;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  font-size:11px;
+  color:var(--muted);
+  border-top:1px solid var(--border);
+  padding:10px;
+}
+.footer .site{justify-self:end}
+
+/* SHARE */
+.caption-box{
+  height:56px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+  background:#060a18;
+  font-size:13px;
+  color:var(--muted);
+}
+.btn-row{
+  display:flex;
+  justify-content:center;
+  gap:14px;
+  margin-top:14px;
+}
+.btn{
+  padding:12px 22px;
+  border-radius:10px;
+  border:none;
+  background:#1f2937;
+  color:var(--text);
+  font-weight:800;
+  cursor:pointer;
+}
+.placeholder-grid{
+  margin-top:auto;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.placeholder{
+  height:44px;
+  border-radius:8px;
+  background:#0e152b;
+  border:1px dashed var(--border);
+}
+</style>
+</head>
+
+<body>
+<canvas id="particles"></canvas>
+
+<div class="header">
+  <div class="brand">PredictViz</div>
+  <div class="bio">Create predictions, capture the moment, and share your call — visually.</div>
+  <div class="version">v0.8.8</div>
+</div>
+
+<div class="main">
+
+<!-- CREATE -->
+<div>
+  <div class="label">Create</div>
+  <div class="module">
+    <div class="field">
+      <label>Prediction (Question)</label>
+      <input id="prediction" maxlength="40" value="Will Bitcoin reach 150k by 2027?">
+      <div class="char-cap"><span id="predCount">0</span>/40</div>
+    </div>
+
+    <div class="inline">
+      <div class="field">
+        <label>Your Prediction</label>
+        <select id="answer">
+          <option>YES</option>
+          <option>NO</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Current Odds (%)</label>
+        <input id="odds" type="number" min="0" max="100" step="1" value="54">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Your name or @</label>
+      <input id="author" maxlength="18" value="@yourhandle">
+      <div class="char-cap"><span id="handleCount">0</span>/18</div>
+    </div>
+  </div>
+</div>
+
+<!-- CAPTURE -->
+<div>
+  <div class="label">Capture</div>
+  <div id="widget" class="capture">
+    <div class="capture-center">
+      <div class="cap-title" id="cPrediction"></div>
+      <div id="cAnswer" class="pred-pill yes"></div>
+
+      <div class="odds-readout">
+        <div class="label">CURRENT ODDS</div>
+        <div id="oddsValue" class="value">54%</div>
+      </div>
+
+      <div class="dial-wrap">
+        <svg viewBox="0 0 200 140">
+          <defs>
+            <linearGradient id="dialGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#7f1d1d"/>
+              <stop offset="50%" stop-color="#d97706"/>
+              <stop offset="100%" stop-color="#15803d"/>
+            </linearGradient>
+          </defs>
+          <path class="arc" d="M20,120 A80,80 0 0 1 180,120"/>
+          <line id="needle" class="needle" x1="100" y1="120" x2="100" y2="40"/>
+          <circle class="needle-base" cx="100" cy="120" r="3"/>
+        </svg>
+        <div class="axis no">NO</div>
+        <div class="axis yes">YES</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span id="cAuthor"></span>
+      <span id="cTime"></span>
+      <span class="site">predictviz.net</span>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE -->
+<div>
+  <div class="label">Share</div>
+  <div class="module">
+    <div class="label" style="margin-bottom:6px">Caption</div>
+    <div id="caption" class="caption-box"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="exportImage()">Save Image</button>
+      <button class="btn" onclick="copyCaption()">Copy Caption</button>
+    </div>
+    <div class="placeholder-grid">
+      <div class="placeholder"></div>
+      <div class="placeholder"></div>
+      <div class="placeholder"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* particles */
+const pc=document.getElementById("particles"),pctx=pc.getContext("2d");
+function rs(){pc.width=innerWidth;pc.height=innerHeight}
+rs();onresize=rs;
+const dots=[...Array(420)].map(()=>({x:Math.random()*pc.width,y:Math.random()*pc.height,v:Math.random()*0.4+0.25,s:Math.random()*2.4+1.4}));
+(function a(){
+  pctx.clearRect(0,0,pc.width,pc.height);
+  pctx.fillStyle="rgba(255,255,255,.18)";
+  dots.forEach(d=>{d.y+=d.v;if(d.y>pc.height)d.y=0;pctx.fillRect(d.x,d.y,d.s,d.s)});
+  requestAnimationFrame(a);
+})();
+
+const pred=prediction,ans=answer,od=odds,auth=author;
+const predCount=document.getElementById("predCount");
+const handleCount=document.getElementById("handleCount");
+const cPred=document.getElementById("cPrediction");
+const cAns=document.getElementById("cAnswer");
+const cAuth=document.getElementById("cAuthor");
+const cTime=document.getElementById("cTime");
+const needle=document.getElementById("needle");
+const oddsValue=document.getElementById("oddsValue");
+const caption=document.getElementById("caption");
+
+function clampOdds(){
+  let v=parseInt(od.value,10);
+  if(isNaN(v)) v=0;
+  v=Math.max(0,Math.min(100,v));
+  od.value=v;
+  return v;
+}
+
+function update(){
+  predCount.textContent=pred.value.length;
+  handleCount.textContent=auth.value.length;
+
+  cPred.textContent=pred.value;
+  cAns.textContent="My Prediction: "+ans.value;
+  cAns.className="pred-pill "+(ans.value==="YES"?"yes":"no");
+
+  const v=clampOdds();
+  const angle=-90+(v*180/100);
+  needle.setAttribute("transform",`rotate(${angle} 100 120)`);
+  oddsValue.textContent=v+"%";
+
+  cAuth.textContent=auth.value;
+  cTime.textContent=new Date().toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+
+  caption.textContent=`${pred.value}
+My Prediction: ${ans.value}
+Current Odds: ${v}%
+#PredictViz`;
+}
+[pred,ans,od,auth].forEach(e=>e.oninput=update);
+update();
+
+function exportImage(){
+  html2canvas(widget,{backgroundColor:null,scale:1080/560}).then(cv=>{
+    const x=cv.getContext("2d");
+    x.fillStyle="rgba(255,255,255,.35)";
+    x.font="14px Inter";
+    x.fillText("predictviz.net",cv.width-140,cv.height-16);
+    const a=document.createElement("a");
+    a.download="predictviz.png";
+    a.href=cv.toDataURL();
+    a.click();
+  });
+}
+function copyCaption(){
+  navigator.clipboard.writeText(caption.textContent);
+}
+</script>
+</body>
+</html>
